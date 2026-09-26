@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>relay</title>
+</head>
+<body>
+<!--
+  This page does one job: receive a drawing from quackdashsol.neocities.org
+  via postMessage, and forward it to Discord. It exists because Neocities
+  blocks direct fetch() calls to other domains from its pages, but does not
+  restrict what a separately-hosted page (like this one, on GitHub Pages)
+  can do, or restrict loading that page in a hidden iframe.
+
+  IMPORTANT: change ALLOWED_ORIGIN below to your actual Neocities site if
+  it's ever different, and keep DISCORD_WEBHOOK_URL in sync with the one
+  in index.html.
+-->
+<script>
+  const ALLOWED_ORIGIN = "https://quackdashsol.neocities.org";
+  const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1553146943255875685/YyCgtMY47sW3dKglFHXzp9U2APP3zoCS7P4aYsbIurHN3oG0btEaxgJV4MU7MAwq9qaP";
+
+  window.addEventListener("message", async (event) => {
+    if (event.origin !== ALLOWED_ORIGIN) return;
+    const data = event.data || {};
+    if (data.type !== "submit-drawing") return;
+
+    try {
+      const formData = new FormData();
+      const payload = {
+        username: "quackdash canvas",
+        content: "someone sent in a drawing! 🎨"
+      };
+      formData.append("payload_json", JSON.stringify(payload));
+      formData.append("files[0]", data.blob, "drawing.png");
+
+      const res = await fetch(DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        body: formData
+      });
+
+      if (res.ok) {
+        event.source.postMessage({ type: "submit-result", success: true }, event.origin);
+      } else {
+        const text = await res.text().catch(() => "");
+        event.source.postMessage({
+          type: "submit-result",
+          success: false,
+          error: "Discord responded " + res.status + " " + text
+        }, event.origin);
+      }
+    } catch (err) {
+      event.source.postMessage({
+        type: "submit-result",
+        success: false,
+        error: String(err)
+      }, event.origin);
+    }
+  });
+</script>
+</body>
+</html>
