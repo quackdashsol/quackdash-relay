@@ -7,44 +7,88 @@
 <body>
 <script>
   const ALLOWED_ORIGIN = "https://quackdashsol.neocities.org";
-  const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1553146943255875685/YyCgtMY47sW3dKglFHXzp9U2APP3zoCS7P4aYsbIurHN3oG0btEaxgJV4MU7MAwq9qaP";
+  const DISCORD_DRAWING_WEBHOOK_URL = "https://discord.com/api/webhooks/1553146943255875685/YyCgtMY47sW3dKglFHXzp9U2APP3zoCS7P4aYsbIurHN3oG0btEaxgJV4MU7MAwq9qaP";
+  const DISCORD_ASKBOX_WEBHOOK_URL = "https://discord.com/api/webhooks/1553623750514315435/gnBIPExH01NhNubqg1kt0VHk4ojM6k3gSXCm_nNIMCGq-nCYfMIVvBdEZFwUcDOb2Uew";
 
   window.addEventListener("message", async (event) => {
     if (event.origin !== ALLOWED_ORIGIN) return;
     const data = event.data || {};
-    if (data.type !== "submit-drawing") return;
 
-    try {
-      const formData = new FormData();
-      const payload = {
-        username: "quackdashcanvas",
-        avatar_url: "https://file.garden/aqp8jxZZW6ZbIloB/notes.png",
-        content: "new drawing submission!"
-      };
-      formData.append("payload_json", JSON.stringify(payload));
-      formData.append("files[0]", data.blob, "drawing.png");
+    if (data.type === "submit-drawing") {
+      try {
+        const formData = new FormData();
+        const payload = {
+          username: "quackdashcanvas",
+          avatar_url: "https://file.garden/aqp8jxZZW6ZbIloB/notes.png",
+          content: "new drawing submission!"
+        };
+        formData.append("payload_json", JSON.stringify(payload));
+        formData.append("files[0]", data.blob, "drawing.png");
 
-      const res = await fetch(DISCORD_WEBHOOK_URL, {
-        method: "POST",
-        body: formData
-      });
+        const res = await fetch(DISCORD_DRAWING_WEBHOOK_URL, {
+          method: "POST",
+          body: formData
+        });
 
-      if (res.ok) {
-        event.source.postMessage({ type: "submit-result", success: true }, event.origin);
-      } else {
-        const text = await res.text().catch(() => "");
+        if (res.ok) {
+          event.source.postMessage({ type: "submit-result", success: true }, event.origin);
+        } else {
+          const text = await res.text().catch(() => "");
+          event.source.postMessage({
+            type: "submit-result",
+            success: false,
+            error: "discord responded " + res.status + " " + text
+          }, event.origin);
+        }
+      } catch (err) {
         event.source.postMessage({
           type: "submit-result",
           success: false,
-          error: "discord responded " + res.status + " " + text
+          error: String(err)
         }, event.origin);
       }
-    } catch (err) {
-      event.source.postMessage({
-        type: "submit-result",
-        success: false,
-        error: String(err)
-      }, event.origin);
+      return;
+    }
+
+    if (data.type === "submit-question") {
+      if (!DISCORD_ASKBOX_WEBHOOK_URL || DISCORD_ASKBOX_WEBHOOK_URL === "PASTE_YOUR_ASKBOX_WEBHOOK_URL_HERE") {
+        event.source.postMessage({
+          type: "submit-result",
+          success: false,
+          error: "askbox webhook isn't set up yet, sorry"
+        }, event.origin);
+        return;
+      }
+
+      try {
+        const res = await fetch(DISCORD_ASKBOX_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "quackdashasks",
+            avatar_url: "https://file.garden/aqp8jxZZW6ZbIloB/messages.png",
+            content: "someone said somethin'! " + data.text
+          })
+        });
+
+        if (res.ok) {
+          event.source.postMessage({ type: "submit-result", success: true }, event.origin);
+        } else {
+          const text = await res.text().catch(() => "");
+          event.source.postMessage({
+            type: "submit-result",
+            success: false,
+            error: "discord responded " + res.status + " " + text
+          }, event.origin);
+        }
+      } catch (err) {
+        event.source.postMessage({
+          type: "submit-result",
+          success: false,
+          error: String(err)
+        }, event.origin);
+      }
+      return;
     }
   });
 </script>
