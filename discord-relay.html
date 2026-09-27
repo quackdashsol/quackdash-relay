@@ -5,17 +5,6 @@
   <title>relay</title>
 </head>
 <body>
-<!--
-  This page does one job: receive a drawing from quackdashsol.neocities.org
-  via postMessage, and forward it to Discord. It exists because Neocities
-  blocks direct fetch() calls to other domains from its pages, but does not
-  restrict what a separately-hosted page (like this one, on GitHub Pages)
-  can do, or restrict loading that page in a hidden iframe.
-
-  IMPORTANT: change ALLOWED_ORIGIN below to your actual Neocities site if
-  it's ever different, and keep DISCORD_WEBHOOK_URL in sync with the one
-  in index.html.
--->
 <script>
   const ALLOWED_ORIGIN = "https://quackdashsol.neocities.org";
   const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1553146943255875685/YyCgtMY47sW3dKglFHXzp9U2APP3zoCS7P4aYsbIurHN3oG0btEaxgJV4MU7MAwq9qaP";
@@ -28,8 +17,8 @@
     try {
       const formData = new FormData();
       const payload = {
-        username: "quackdash canvas",
-        content: "someone sent in a drawing! 🎨"
+        username: "quackdashcanvas",
+        content: "new drawing submission!"
       };
       formData.append("payload_json", JSON.stringify(payload));
       formData.append("files[0]", data.blob, "drawing.png");
@@ -46,7 +35,7 @@
         event.source.postMessage({
           type: "submit-result",
           success: false,
-          error: "Discord responded " + res.status + " " + text
+          error: "discord responded " + res.status + " " + text
         }, event.origin);
       }
     } catch (err) {
